@@ -1,0 +1,9 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>{{.Title}}</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;max-width:52rem;margin:2rem auto;padding:0 1rem}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:.4rem;text-align:left}.running{color:#b58900}.finished{color:#2aa198}.failed{color:#dc322f}</style>
+</head><body><h1>{{.Title}}</h1>
+<p>Started {{.Started}}</p>
+<h2>Recent jobs</h2>
+<table><tr><th>Job</th><th>Trigger</th><th>State</th><th>Started</th><th>Created</th><th>Updated</th><th>Deleted</th><th>Kept</th></tr>
+{{range .Jobs}}<tr><td>{{.ID}}</td><td>{{.Trigger}}</td><td class="{{.State}}">{{.State}}</td><td>{{.DisplayTime.Format "02 Jan 15:04"}}</td><td>{{.Counts.Created}}</td><td>{{.Counts.Updated}}</td><td>{{.Counts.Deleted}}</td><td>{{.Counts.Unchanged}}</td></tr>
+{{end}}</table></body></html>

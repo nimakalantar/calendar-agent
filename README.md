@@ -9,7 +9,9 @@ Go applications that manage generated calendar events.
 - `src/google/calendar` — Google Calendar CRUD, incremental cache, backend.
 - `src/google/auth` — Google OAuth2 desktop flow.
 - `src/anchor` — location timeline derived from `#anchor` / `#return` events.
-- `src/geocode` — coordinates, Nominatim, and cached location lookup.
+- `src/geocode` — coordinates, UK postcodes, Nominatim, and cached lookup.
+- `src/health` — cached dependency probes and readiness reports.
+- `src/controlapi` — reusable HTTP control plane, auth, middleware, dashboard.
 - `src/location` — shared coordinates.
 - `src/platform/*` — atomic files, locks, retries, disk checks.
 

@@ -45,7 +45,9 @@ jobs:
           }
           check src/calendaragent 80
           check src/anchor 80
+          check src/controlapi 50
           check src/geocode 80
+          check src/health 70
           check src/google/auth 55
           check src/google/calendar 70
           check src/location 80
