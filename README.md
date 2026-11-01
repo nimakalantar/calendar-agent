@@ -59,6 +59,8 @@ backend := gcalendar.NewBackend(client, gcalendar.Config{
 
 `Client.ListAll` returns unowned events for busy-calendar checks.
 `Client.ListRawEvents` exposes provider fields such as recurrence and attendees.
+`WriteCalendarList` and `ResolveCalendar` are the shared CLI helpers for listing
+and selecting calendars by ID or summary.
 
 Metrics are optional via the `Inc`/`Set` interface; HTTP instrumentation can be
 added with `ClientOptions.WrapTransport`.

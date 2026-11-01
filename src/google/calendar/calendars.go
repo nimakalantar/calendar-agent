@@ -2,6 +2,9 @@ package gcalendar
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"strings"
 
 	"google.golang.org/api/calendar/v3"
 )
@@ -24,4 +27,24 @@ func (c *Client) ListCalendars(ctx context.Context) ([]CalendarDescriptor, error
 			return result
 		})
 	})
+}
+
+// WriteCalendarList prints the available calendars in a stable, column-aligned
+// form suitable for CLI output.
+func WriteCalendarList(w io.Writer, calendars []CalendarDescriptor) {
+	fmt.Fprintln(w, "Available calendars:")
+	for _, calendar := range calendars {
+		fmt.Fprintf(w, "  %-60s  %s\n", calendar.ID, calendar.Summary)
+	}
+}
+
+// ResolveCalendar returns the ID for a calendar matching either its ID or its
+// summary, ignoring summary case.
+func ResolveCalendar(calendars []CalendarDescriptor, value string) (string, error) {
+	for _, calendar := range calendars {
+		if calendar.ID == value || strings.EqualFold(calendar.Summary, value) {
+			return calendar.ID, nil
+		}
+	}
+	return "", fmt.Errorf("no calendar matches %q", value)
 }
