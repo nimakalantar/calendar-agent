@@ -9,6 +9,7 @@ package anchor
 
 import (
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -155,7 +156,7 @@ func sortTimeline(timeline Timeline) {
 
 func tags(text string) (isAnchor, isReturn bool) {
 	for _, word := range fields(text) {
-		switch word {
+		switch strings.ToLower(word) {
 		case "#anchor":
 			isAnchor = true
 		case "#return", "#home":
