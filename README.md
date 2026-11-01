@@ -73,17 +73,18 @@ active := anchor.Resolve(result.Timeline, at)
 `#anchor` moves the active location after the event ends; `#return` / `#home`
 reverts to home. `result.State` is the override to persist across runs.
 
-`src/geocode` resolves those location strings:
+`src/geocode` resolves those location strings. The `auto` strategy tries
+coordinates, then UK postcodes via postcodes.io, then rate-limited Nominatim,
+with an LRU disk cache:
 
 ```go
-resolver := geocode.Chain{
-    geocode.Coordinates{},
-    geocode.Cache{
-        Path:  ".cache/geocode.json",
-        Inner: geocode.Nominatim{UserAgent: "my-agent"},
-    },
-}
-coords, err := resolver.Resolve(ctx, "55-61 Brewery Rd, London")
+g := geocode.NewWithOptions(geocode.Options{
+    UserAgent: "my-agent/1.0 (+https://example.com)",
+    CachePath: ".cache/geocode.json",
+    Strategy:  geocode.StrategyAuto,
+})
+coords, err := g.Resolve(ctx, "55-61 Brewery Rd, London")
+defer g.Flush()
 ```
 
 ## Install
