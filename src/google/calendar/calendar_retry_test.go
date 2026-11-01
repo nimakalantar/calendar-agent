@@ -40,6 +40,19 @@ func TestWithRetryDoesNotRetryClientError(t *testing.T) {
 	}
 }
 
+func TestGoogleRetryableRateLimit(t *testing.T) {
+	err := &googleapi.Error{
+		Code:   http.StatusForbidden,
+		Errors: []googleapi.ErrorItem{{Reason: "rateLimitExceeded"}},
+	}
+	if !googleRetryable(err) {
+		t.Fatal("403 rateLimitExceeded should be retryable")
+	}
+	if googleRetryable(&googleapi.Error{Code: http.StatusForbidden}) {
+		t.Fatal("plain 403 should not be retryable")
+	}
+}
+
 func TestIsTransientAPIError(t *testing.T) {
 	for _, status := range []int{http.StatusTooManyRequests, http.StatusInternalServerError, http.StatusServiceUnavailable} {
 		if !IsTransientAPIError(&googleapi.Error{Code: status}) {

@@ -3,6 +3,7 @@ package gcalendar
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"google.golang.org/api/googleapi"
@@ -11,7 +12,7 @@ import (
 )
 
 // googleRetry bounds retries for transient Google API failures.
-var googleRetry = retry.Policy{Attempts: 3, BaseDelay: 500 * time.Millisecond, MaxDelay: retry.DefaultMaxServerDelay}
+var googleRetry = retry.Policy{Attempts: 6, BaseDelay: time.Second, MaxDelay: retry.DefaultMaxServerDelay}
 
 var googleClassifier = retry.Classifier{
 	Retryable:   googleRetryable,
@@ -31,7 +32,17 @@ func retryVoid(ctx context.Context, fn func(context.Context) error) error {
 func googleRetryable(err error) bool {
 	var apiErr *googleapi.Error
 	if errors.As(err, &apiErr) {
-		return retry.RetryableStatus(apiErr.Code)
+		if retry.RetryableStatus(apiErr.Code) {
+			return true
+		}
+		if apiErr.Code == http.StatusForbidden {
+			for _, item := range apiErr.Errors {
+				if item.Reason == "rateLimitExceeded" || item.Reason == "userRateLimitExceeded" {
+					return true
+				}
+			}
+		}
+		return false
 	}
 	return retry.Classify(err)
 }

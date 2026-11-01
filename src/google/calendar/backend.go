@@ -114,7 +114,14 @@ func (b *Backend) eventPayload(event calendaragent.Event) *calendar.Event {
 				Method: reminder.Method, Minutes: int64(reminder.Minutes),
 			})
 		}
-		payload.Reminders = &calendar.EventReminders{UseDefault: false, Overrides: reminders}
+		payload.Reminders = &calendar.EventReminders{
+			UseDefault: false,
+			Overrides:  reminders,
+			// UseDefault is false; ForceSendFields is required because the
+			// generated JSON tags use omitempty, and Google otherwise treats
+			// an omitted value as "use the calendar defaults".
+			ForceSendFields: []string{"UseDefault"},
+		}
 	}
 	return payload
 }

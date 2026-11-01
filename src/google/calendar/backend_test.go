@@ -49,6 +49,9 @@ func TestBackendPayloadWritesSchemaAndPresentation(t *testing.T) {
 	if payload.Reminders == nil || payload.Reminders.UseDefault || len(payload.Reminders.Overrides) != 1 {
 		t.Fatalf("reminders = %+v", payload.Reminders)
 	}
+	if len(payload.Reminders.ForceSendFields) == 0 || payload.Reminders.ForceSendFields[0] != "UseDefault" {
+		t.Fatalf("reminders must force-send useDefault=false: %+v", payload.Reminders)
+	}
 	props := payload.ExtendedProperties.Private
 	for key, want := range map[string]string{
 		"managedBy":     "calendar-agent",
