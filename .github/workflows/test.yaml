@@ -1,0 +1,49 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -count=1 -shuffle=on ./...
+
+      - name: Race
+        run: go test -count=1 -race ./...
+
+      - name: Coverage
+        run: |
+          check() {
+            pkg="$1"
+            min="$2"
+            profile="/tmp/$(echo "$pkg" | tr / _).out"
+            go test -coverprofile="$profile" "./$pkg"
+            total="$(go tool cover -func="$profile" | tail -1 | awk '{print $3}' | tr -d '%')"
+            awk -v total="$total" -v min="$min" -v pkg="$pkg" \
+              'BEGIN { if (total < min) { printf "%s coverage %.1f%% is below %.1f%%\n", pkg, total, min; exit 1 } }'
+          }
+          check src/calendaragent 80
+          check src/google/auth 55
+          check src/google/calendar 70
+          check src/platform/fsutil 70
