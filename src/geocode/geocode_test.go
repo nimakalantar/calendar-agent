@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"golang.org/x/time/rate"
@@ -156,5 +158,85 @@ func TestGeocoderUsesInjectedNominatimClient(t *testing.T) {
 	}
 	if coord.Lat != 51.5 || coord.Lon != -0.1 {
 		t.Fatalf("coord = %+v", coord)
+	}
+}
+
+func TestParseNominatimCoordinateErrors(t *testing.T) {
+	cases := [][]byte{
+		[]byte(`not json`),
+		[]byte(`[]`),
+		[]byte(`[{"lat":"x","lon":"0"}]`),
+		[]byte(`[{"lat":"91","lon":"0"}]`),
+		[]byte(`[{"lat":"0","lon":"181"}]`),
+	}
+	for _, body := range cases {
+		if _, err := parseNominatimCoordinate(body); err == nil {
+			t.Fatalf("expected error for %s", body)
+		}
+	}
+}
+
+func TestGeocoderMemoisesFailures(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		http.Error(w, "bad request", http.StatusBadRequest)
+	}))
+	defer server.Close()
+	geocoder := NewWithOptions(Options{
+		UserAgent: "test", NominatimURL: server.URL, HTTPClient: server.Client(),
+		Limiter: rate.NewLimiter(rate.Inf, 1),
+	})
+	if _, err := geocoder.Resolve(context.Background(), "Some Address"); err == nil {
+		t.Fatal("expected a failure")
+	}
+	if _, err := geocoder.Resolve(context.Background(), "Some Address"); err == nil {
+		t.Fatal("expected a cached failure")
+	}
+	if requests != 1 {
+		t.Fatalf("requests = %d, want 1 after failure memoisation", requests)
+	}
+}
+
+func TestNewCoordCacheFromEntriesTrims(t *testing.T) {
+	cache := newCoordCacheFromEntries(map[string]Coord{
+		"a": {Lat: 1}, "b": {Lat: 2},
+	}, []string{"b", "a"}, 1)
+	if cache.len() != 1 {
+		t.Fatalf("cache size = %d", cache.len())
+	}
+	if _, ok := cache.get("a"); !ok {
+		t.Fatal("newest entry should remain")
+	}
+}
+
+func TestPruneCacheEdgeCases(t *testing.T) {
+	if _, err := PruneCache("", 1); err == nil {
+		t.Fatal("expected empty path error")
+	}
+	if _, err := PruneCache(filepath.Join(t.TempDir(), "cache.json"), 0); err == nil {
+		t.Fatal("expected invalid maxEntries error")
+	}
+	path := filepath.Join(t.TempDir(), "cache.json")
+	removed, err := PruneCache(path, 2)
+	if err != nil || removed != 0 {
+		t.Fatalf("missing cache = %d, %v", removed, err)
+	}
+	if err := os.WriteFile(path, []byte("{bad"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := PruneCache(path, 2); err == nil {
+		t.Fatal("expected corrupt cache error")
+	}
+}
+
+func TestPostcodesIOInvalidResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"status":404,"result":null}`))
+	}))
+	defer server.Close()
+	geocoder := NewWithOptions(Options{UserAgent: "test", PostcodesURL: server.URL, NominatimURL: server.URL, HTTPClient: server.Client(), Limiter: rate.NewLimiter(rate.Inf, 1)})
+	if _, err := geocoder.Resolve(context.Background(), "SW1A 1AA"); err == nil {
+		t.Fatal("expected postcode lookup to fall through and fail")
 	}
 }
