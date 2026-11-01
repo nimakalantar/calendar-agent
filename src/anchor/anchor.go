@@ -19,6 +19,11 @@ type Event struct {
 	Description string
 	Location    string
 	End         time.Time
+
+	// IsAnchor and IsReturn can be set by an adapter that already parsed tags.
+	// When both are false, Build parses #anchor / #return / #home from the text.
+	IsAnchor bool
+	IsReturn bool
 }
 
 // Entry is one point in the location timeline.
@@ -90,7 +95,10 @@ func Build(events []Event, home string, cooldown time.Duration, persisted State,
 		}
 		last = event
 		hasLast = true
-		isAnchor, isReturn := tags(event.Summary + " " + event.Description)
+		isAnchor, isReturn := event.IsAnchor, event.IsReturn
+		if !isAnchor && !isReturn {
+			isAnchor, isReturn = tags(event.Summary + " " + event.Description)
+		}
 		switch {
 		case isAnchor:
 			if event.Location == "" {
