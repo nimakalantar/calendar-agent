@@ -134,7 +134,10 @@ func TestListCalendarsParses(t *testing.T) {
 			return
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []map[string]any{{"id": "primary", "summary": "Home"}},
+			"items": []map[string]any{
+				{"id": "primary", "summary": "Home"},
+				{"id": "imported", "summary": "Calendar", "summaryOverride": "Work"},
+			},
 		})
 	}))
 
@@ -142,8 +145,11 @@ func TestListCalendarsParses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(calendars) != 1 || calendars[0].ID != "primary" || calendars[0].Summary != "Home" {
+	if len(calendars) != 2 || calendars[0].ID != "primary" || calendars[0].Summary != "Home" {
 		t.Fatalf("calendars = %+v", calendars)
+	}
+	if calendars[1].Summary != "Work" {
+		t.Fatalf("summaryOverride not applied: %+v", calendars[1])
 	}
 }
 

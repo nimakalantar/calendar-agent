@@ -22,7 +22,11 @@ func (c *Client) ListCalendars(ctx context.Context) ([]CalendarDescriptor, error
 		return collectPages(ctx, call.Pages, func(page *calendar.CalendarList) []CalendarDescriptor {
 			result := make([]CalendarDescriptor, 0, len(page.Items))
 			for _, item := range page.Items {
-				result = append(result, CalendarDescriptor{ID: item.Id, Summary: item.Summary})
+				summary := item.Summary
+				if item.SummaryOverride != "" {
+					summary = item.SummaryOverride
+				}
+				result = append(result, CalendarDescriptor{ID: item.Id, Summary: summary})
 			}
 			return result
 		})
