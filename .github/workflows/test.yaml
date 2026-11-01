@@ -44,6 +44,9 @@ jobs:
               'BEGIN { if (total < min) { printf "%s coverage %.1f%% is below %.1f%%\n", pkg, total, min; exit 1 } }'
           }
           check src/calendaragent 80
+          check src/anchor 80
+          check src/geocode 80
           check src/google/auth 55
           check src/google/calendar 70
+          check src/location 80
           check src/platform/fsutil 70

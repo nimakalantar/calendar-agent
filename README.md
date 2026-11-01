@@ -8,6 +8,9 @@ Go applications that manage generated calendar events.
 - `src/calendaragent` — reconciliation, ownership, content hashes, windows.
 - `src/google/calendar` — Google Calendar CRUD, incremental cache, backend.
 - `src/google/auth` — Google OAuth2 desktop flow.
+- `src/anchor` — location timeline derived from `#anchor` / `#return` events.
+- `src/geocode` — coordinates, Nominatim, and cached location lookup.
+- `src/location` — shared coordinates.
 - `src/platform/*` — atomic files, locks, retries, disk checks.
 
 ## Reconcile
@@ -57,6 +60,31 @@ backend := gcalendar.NewBackend(client, gcalendar.Config{
 
 Metrics are optional via the `Inc`/`Set` interface; HTTP instrumentation can be
 added with `ClientOptions.WrapTransport`.
+
+## Location anchors and geocoding
+
+`src/anchor` turns tagged calendar events into a location timeline:
+
+```go
+result := anchor.Build(events, "home", 2*time.Hour, persisted, now)
+active := anchor.Resolve(result.Timeline, at)
+```
+
+`#anchor` moves the active location after the event ends; `#return` / `#home`
+reverts to home. `result.State` is the override to persist across runs.
+
+`src/geocode` resolves those location strings:
+
+```go
+resolver := geocode.Chain{
+    geocode.Coordinates{},
+    geocode.Cache{
+        Path:  ".cache/geocode.json",
+        Inner: geocode.Nominatim{UserAgent: "my-agent"},
+    },
+}
+coords, err := resolver.Resolve(ctx, "55-61 Brewery Rd, London")
+```
 
 ## Install
 
